@@ -202,6 +202,21 @@ aside a {
   --nextra-content-width: 85rem;
 }
 
+/* 하단 커스텀 footer */
+.site-footer {
+  border-top: 1px solid rgba(55, 53, 47, 0.09);
+  background: rgba(248, 248, 247, 0.7);
+  padding: 2.5rem max(env(safe-area-inset-right), 1.5rem)
+    calc(2.5rem + env(safe-area-inset-bottom))
+    max(env(safe-area-inset-left), 1.5rem);
+  text-align: center;
+}
+
+.dark .site-footer {
+  border-top-color: rgba(255, 255, 255, 0.09);
+  background: rgba(23, 23, 23, 0.8);
+}
+
 /* ===== 사이드바 footer 재배치 ===== */
 
 /* 사이드바를 flex column으로 만들어 footer를 상단으로 이동 */
@@ -242,4 +257,3 @@ aside a {
 .theme-switch-navbar {
   margin-left: 0.25rem;
 }
-

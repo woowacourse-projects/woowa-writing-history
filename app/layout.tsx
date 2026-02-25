@@ -1,4 +1,4 @@
-import { Footer, Layout, Navbar, ThemeSwitch } from 'nextra-theme-docs'
+import { Layout, Navbar, ThemeSwitch } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
@@ -42,11 +42,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             toggleButton: true
           }}
           footer={
-            <Footer>
+            <footer className="site-footer">
               <span style={{ fontSize: '0.8125rem', color: 'rgb(155, 155, 155)' }}>
                 © {new Date().getFullYear()} 우아한테크코스 · 우아한형제들 테크교육개발팀
               </span>
-            </Footer>
+            </footer>
           }
         >
           {children}

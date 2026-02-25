@@ -4,12 +4,33 @@ import { Card } from './components/Card'
 import { CardGrid } from './components/CardGrid'
 import { Placeholder } from './components/Placeholder'
 import { Hero } from './components/Hero'
+import { WritingMeta } from './components/WritingMeta'
 
 const docsComponents = getDocsMDXComponents()
+const docsWrapper = docsComponents.wrapper
 
-export function useMDXComponents(components?: Record<string, React.FC>) {
+type DocsWrapperProps = Parameters<typeof docsWrapper>[0]
+
+function WrapperWithWritingMeta(props: DocsWrapperProps) {
+  const metadata = props.metadata as Record<string, unknown>
+  const author = typeof metadata.author === 'string' ? metadata.author : undefined
+  const source = typeof metadata.source === 'string' ? metadata.source : undefined
+
+  return docsWrapper({
+    ...props,
+    children: (
+      <>
+        <WritingMeta author={author} source={source} />
+        {props.children}
+      </>
+    )
+  })
+}
+
+export function useMDXComponents(components?: Record<string, unknown>) {
   return {
     ...docsComponents,
+    wrapper: WrapperWithWritingMeta,
     Callout,
     Card,
     CardGrid,
