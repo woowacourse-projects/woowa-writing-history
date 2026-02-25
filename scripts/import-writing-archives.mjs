@@ -2,19 +2,32 @@ import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const repoConfigs = [
+const generationRepoConfigs = [
   { generation: 2, gitDir: '/tmp/woowa-writing-2.git', repoName: 'woowa-writing-2' },
   { generation: 3, gitDir: '/tmp/woowa-writing-3.git', repoName: 'woowa-writing-3' },
   { generation: 4, gitDir: '/tmp/woowa-writing-4.git', repoName: 'woowa-writing-4' },
   { generation: 5, gitDir: '/tmp/woowa-writing-5.git', repoName: 'woowa-writing-5' }
 ]
 
+const splitGenerationConfig = {
+  gitDir: '/tmp/woowa-writing.git',
+  repoName: 'woowa-writing',
+  targetGenerations: [6, 7],
+  resolveGenerationFromYear: (year) => {
+    if (year === 2024) return 6
+    if (year >= 2025) return 7
+    return null
+  }
+}
+
 const excludedBranchNames = new Set(['main', 'master', 'develop', 'gh-pages'])
 const generationYears = {
   2: 2020,
   3: 2021,
   4: 2022,
-  5: 2023
+  5: 2023,
+  6: 2024,
+  7: 2025
 }
 
 function run(command) {
@@ -100,7 +113,7 @@ function buildRawUrl(repoName, branchName, filePath) {
 }
 
 function isExternalTarget(target) {
-  return /^(?:[a-z]+:|\/\/|#|\/)/i.test(target)
+  return /^(?:[a-z]+:|\/\/|#)/i.test(target)
 }
 
 function isImageTargetPath(targetPath) {
@@ -126,8 +139,18 @@ function rewriteTarget(target, { repoName, branchName, sourcePath, treatAsImage 
   if (!pathname || isExternalTarget(pathname)) return target
 
   const sourceDir = path.posix.dirname(sourcePath)
-  const joined = path.posix.normalize(path.posix.join(sourceDir, pathname))
-  const resolvedPath = joined.replace(/^(\.\.\/)+/g, '')
+  let resolvedPath
+
+  if (pathname.startsWith('/')) {
+    const isImageRootPath = pathname.startsWith('/assets/') || pathname.startsWith('/asset/') || pathname.startsWith('/images/')
+    const shouldRewriteRootPath = isImageRootPath || treatAsImage || isImageTargetPath(pathname)
+    if (!shouldRewriteRootPath) return target
+    resolvedPath = pathname.replace(/^\/+/, '')
+  } else {
+    const joined = path.posix.normalize(path.posix.join(sourceDir, pathname))
+    resolvedPath = joined.replace(/^(\.\.\/)+/g, '')
+  }
+
   if (!resolvedPath || resolvedPath.startsWith('.')) return target
 
   const useRaw = treatAsImage || isImageTargetPath(resolvedPath)
@@ -321,6 +344,32 @@ function shouldIncludeMarkdown(filePath) {
   return true
 }
 
+function listBranches(gitDir) {
+  return run(`git --git-dir=${gitDir} for-each-ref --format='%(refname:short)' refs/heads`)
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((branch) => !excludedBranchNames.has(branch))
+}
+
+function listMarkdownFiles(gitDir, branch) {
+  return run(`git --git-dir=${gitDir} ls-tree -r --name-only refs/heads/${JSON.stringify(branch)}`)
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter(shouldIncludeMarkdown)
+}
+
+function getUpdatedYear(gitDir, branch, filePath) {
+  const committedAt = run(
+    `git --git-dir=${gitDir} log -1 --format=%cI refs/heads/${JSON.stringify(branch)} -- ${JSON.stringify(filePath)}`
+  ).trim()
+  if (!committedAt) return null
+
+  const year = Number(committedAt.slice(0, 4))
+  return Number.isFinite(year) ? year : null
+}
+
 function importGeneration({ generation, gitDir, repoName }) {
   if (!fs.existsSync(gitDir)) {
     throw new Error(`missing git dir: ${gitDir}`)
@@ -332,11 +381,7 @@ function importGeneration({ generation, gitDir, repoName }) {
   fs.rmSync(writingsDir, { recursive: true, force: true })
   ensureDir(writingsDir)
 
-  const branches = run(`git --git-dir=${gitDir} for-each-ref --format='%(refname:short)' refs/heads`)
-    .split('\n')
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .filter((branch) => !excludedBranchNames.has(branch))
+  const branches = listBranches(gitDir)
 
   const levelsSeen = new Set()
   const levelCounts = {}
@@ -344,11 +389,7 @@ function importGeneration({ generation, gitDir, repoName }) {
   let totalFiles = 0
 
   for (const branch of branches) {
-    const files = run(`git --git-dir=${gitDir} ls-tree -r --name-only refs/heads/${JSON.stringify(branch)}`)
-      .split('\n')
-      .map((value) => value.trim())
-      .filter(Boolean)
-      .filter(shouldIncludeMarkdown)
+    const files = listMarkdownFiles(gitDir, branch)
 
     const rows = files.map((filePath) => {
       const level = detectLevel(filePath)
@@ -426,10 +467,153 @@ function importGeneration({ generation, gitDir, repoName }) {
   }
 }
 
+function importGenerationsByUpdatedYear({ gitDir, repoName, targetGenerations, resolveGenerationFromYear }) {
+  if (!fs.existsSync(gitDir)) {
+    throw new Error(`missing git dir: ${gitDir}`)
+  }
+
+  const generations = [...new Set(targetGenerations)].sort((a, b) => a - b)
+  const generationSet = new Set(generations)
+  const generationStates = new Map()
+
+  for (const generation of generations) {
+    const generationDir = path.join('content', 'tech-blog-book', `generation-${generation}`)
+    const writingsDir = path.join(generationDir, 'writings')
+
+    fs.rmSync(writingsDir, { recursive: true, force: true })
+    ensureDir(writingsDir)
+
+    generationStates.set(generation, {
+      generation,
+      generationDir,
+      writingsDir,
+      levelsSeen: new Set(),
+      levelCounts: {},
+      usedDestNames: new Set(),
+      totalFiles: 0,
+      branches: new Set()
+    })
+  }
+
+  const branches = listBranches(gitDir)
+
+  for (const branch of branches) {
+    const files = listMarkdownFiles(gitDir, branch)
+
+    const rows = []
+    for (const filePath of files) {
+      const updatedYear = getUpdatedYear(gitDir, branch, filePath)
+      if (!updatedYear) continue
+
+      const generation = resolveGenerationFromYear(updatedYear)
+      if (!generationSet.has(generation)) continue
+
+      rows.push({
+        generation,
+        filePath,
+        level: detectLevel(filePath),
+        slug: safeSlug(path.basename(filePath))
+      })
+    }
+
+    const grouped = new Map()
+    for (const row of rows) {
+      const key = `${row.generation}::${row.level}`
+      if (!grouped.has(key)) grouped.set(key, [])
+      grouped.get(key).push(row)
+    }
+
+    for (const [key, entries] of grouped.entries()) {
+      const [generationValue, level] = key.split('::')
+      const generation = Number(generationValue)
+      const state = generationStates.get(generation)
+      if (!state) continue
+
+      state.branches.add(branch)
+
+      const safeAuthor = safeToken(branch)
+      const singleWithoutSlug = entries.length === 1 && level !== 'unclassified'
+
+      entries.sort((a, b) => a.filePath.localeCompare(b.filePath, 'en'))
+
+      for (const entry of entries) {
+        const ext = '.md'
+        const baseName = singleWithoutSlug
+          ? `${level}-${safeAuthor}`
+          : `${level}-${safeAuthor}-${entry.slug}`
+
+        let candidate = `${baseName}${ext}`
+        let serial = 2
+        while (state.usedDestNames.has(`${level}/${candidate}`)) {
+          candidate = `${baseName}-${serial}${ext}`
+          serial += 1
+        }
+        state.usedDestNames.add(`${level}/${candidate}`)
+
+        const source = buildBlobUrl(repoName, branch, entry.filePath)
+        const bodyRaw = run(`git --git-dir=${gitDir} show refs/heads/${JSON.stringify(branch)}:${JSON.stringify(entry.filePath)}`)
+        const normalizedBody = stripBom(bodyRaw).replace(/\r\n/g, '\n').trimEnd() + '\n'
+        const body = rewriteRelativeReferences(normalizedBody, {
+          repoName,
+          branchName: branch,
+          sourcePath: entry.filePath
+        })
+
+        const frontmatter = buildFrontmatter({
+          author: branch,
+          generation,
+          level,
+          originalFilename: path.basename(entry.filePath),
+          source,
+          sourcePath: entry.filePath
+        })
+
+        const targetDir = path.join(state.writingsDir, entry.level)
+        const targetPath = path.join(targetDir, candidate)
+        writeTextFile(targetPath, `${frontmatter}\n${body}`)
+
+        state.levelsSeen.add(entry.level)
+        state.levelCounts[entry.level] = (state.levelCounts[entry.level] ?? 0) + 1
+        state.totalFiles += 1
+      }
+    }
+  }
+
+  const results = []
+
+  for (const generation of generations) {
+    const state = generationStates.get(generation)
+    if (!state) continue
+
+    const summary = {
+      totalFiles: state.totalFiles,
+      branchCount: state.branches.size,
+      levelCounts: state.levelCounts
+    }
+
+    createGenerationMeta(state.generationDir)
+    createWritingsMeta(state.writingsDir, state.levelsSeen)
+    createWritingsIndex(state.writingsDir, generation, summary)
+    createGenerationIndex(state.generationDir, generation, summary)
+
+    results.push({
+      generation,
+      branchCount: state.branches.size,
+      totalFiles: state.totalFiles,
+      levelCounts: state.levelCounts
+    })
+  }
+
+  return results
+}
+
 const results = []
-for (const config of repoConfigs) {
+for (const config of generationRepoConfigs) {
   const result = importGeneration(config)
   results.push(result)
 }
+
+const splitResults = importGenerationsByUpdatedYear(splitGenerationConfig)
+results.push(...splitResults)
 
 console.log(JSON.stringify(results, null, 2))
