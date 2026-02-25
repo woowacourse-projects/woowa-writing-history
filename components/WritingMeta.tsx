@@ -14,28 +14,22 @@ export function WritingMeta({ author, source }: WritingMetaProps) {
 
   return (
     <aside className={styles.meta} aria-label="글 정보">
-      <dl className={styles.list}>
+      <div className={styles.row}>
         {author && (
-          <div className={styles.item}>
-            <dt className={styles.term}>저자</dt>
-            <dd className={styles.value}>
-              <a className={styles.link} href={profileUrl} target="_blank" rel="noreferrer">
-                @{author}
-              </a>
-            </dd>
-          </div>
+          <span className={styles.item}>
+            <span className={styles.label}>저자</span>
+            <a className={styles.link} href={profileUrl} target="_blank" rel="noreferrer">
+              @{author}
+            </a>
+          </span>
         )}
+        {author && source && <span className={styles.separator}>·</span>}
         {source && (
-          <div className={styles.item}>
-            <dt className={styles.term}>원문</dt>
-            <dd className={styles.value}>
-              <a className={styles.sourceLink} href={source} target="_blank" rel="noreferrer">
-                GitHub 파일 보기
-              </a>
-            </dd>
-          </div>
+          <a className={styles.sourceLink} href={source} target="_blank" rel="noreferrer">
+            원문 보기
+          </a>
         )}
-      </dl>
+      </div>
     </aside>
   )
 }

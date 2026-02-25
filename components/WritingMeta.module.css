@@ -1,107 +1,87 @@
 .meta {
-  margin: 0 0 1.25rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid rgba(55, 53, 47, 0.12);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(55, 53, 47, 0.035), rgba(55, 53, 47, 0.02));
+  margin: 0.7rem 0 0.95rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(55, 53, 47, 0.7);
 }
 
-.list {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem 0.75rem;
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   min-width: 0;
 }
 
-.term {
-  margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.2;
+.label {
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgba(55, 53, 47, 0.5);
+  color: rgba(55, 53, 47, 0.52);
 }
 
-.value {
-  margin: 0.2rem 0 0;
-  font-size: 0.88rem;
-  line-height: 1.4;
+.separator {
+  color: rgba(55, 53, 47, 0.35);
 }
 
 .link {
   color: inherit;
-  text-decoration: none !important;
-  border-bottom: 1px solid rgba(55, 53, 47, 0.28);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(55, 53, 47, 0.28);
+  white-space: nowrap;
 }
 
 .link:hover {
-  border-bottom-color: rgba(55, 53, 47, 0.65);
+  text-decoration-color: rgba(55, 53, 47, 0.62);
 }
 
 .sourceLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.45rem;
-  border: 1px solid rgba(55, 53, 47, 0.17);
-  border-radius: 999px;
-  text-decoration: none !important;
-  background: rgba(55, 53, 47, 0.03);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(55, 53, 47, 0.28);
+  white-space: nowrap;
 }
 
 .sourceLink:hover {
-  border-color: rgba(55, 53, 47, 0.35);
-  background: rgba(55, 53, 47, 0.06);
-}
-
-/* 첫 제목이 과하게 내려가지 않도록 메타 박스 뒤 간격을 보정 */
-.meta + :global(h1),
-.meta + :global(h2),
-.meta + :global(h3) {
-  margin-top: 0.5rem !important;
+  text-decoration-color: rgba(55, 53, 47, 0.62);
 }
 
 @media (max-width: 640px) {
-  .list {
-    grid-template-columns: 1fr;
-    gap: 0.6rem;
+  .meta {
+    margin-top: 0.6rem;
   }
 }
 
 :global(.dark) .meta {
-  border-color: rgba(255, 255, 255, 0.13);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.04),
-      rgba(255, 255, 255, 0.018)
-    );
+  color: rgba(255, 255, 255, 0.68);
 }
 
-:global(.dark) .term {
+:global(.dark) .label {
   color: rgba(255, 255, 255, 0.5);
 }
 
+:global(.dark) .separator {
+  color: rgba(255, 255, 255, 0.34);
+}
+
 :global(.dark) .link {
-  border-bottom-color: rgba(255, 255, 255, 0.3);
+  text-decoration-color: rgba(255, 255, 255, 0.32);
 }
 
 :global(.dark) .link:hover {
-  border-bottom-color: rgba(255, 255, 255, 0.72);
+  text-decoration-color: rgba(255, 255, 255, 0.76);
 }
 
 :global(.dark) .sourceLink {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
+  text-decoration-color: rgba(255, 255, 255, 0.32);
 }
 
 :global(.dark) .sourceLink:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.09);
+  text-decoration-color: rgba(255, 255, 255, 0.76);
 }
