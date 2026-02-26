@@ -1,0 +1,36 @@
+.toggle {
+  margin: 1rem 0;
+  border: 1px solid var(--nextra-border-color, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.summary {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary::before {
+  content: '▶';
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.toggle[open] > .summary::before {
+  transform: rotate(90deg);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.content {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--nextra-border-color, #e5e7eb);
+}

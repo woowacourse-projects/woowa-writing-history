@@ -3,6 +3,7 @@ import { Callout } from './components/Callout'
 import { Card } from './components/Card'
 import { CardGrid } from './components/CardGrid'
 import { Placeholder } from './components/Placeholder'
+import { Toggle } from './components/Toggle'
 import { Hero } from './components/Hero'
 import { WritingMeta } from './components/WritingMeta'
 
@@ -35,6 +36,7 @@ export function useMDXComponents(components?: Record<string, unknown>) {
     Card,
     CardGrid,
     Placeholder,
+    Toggle,
     Hero,
     ...components
   }
